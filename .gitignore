@@ -1,0 +1,6 @@
+qa/
+*.zip
+.sites-runtime/
+.env
+.env.*
+node_modules/
