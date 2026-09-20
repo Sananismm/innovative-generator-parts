@@ -38,7 +38,10 @@ export async function loginAction(_: FormState, formData: FormData): Promise<For
     const user = await db.user.findUnique({ where: { email } });
     if (!user || !(await bcrypt.compare(password, user.passwordHash))) return { error: "Email or password is incorrect." };
     await createSession({ userId: user.id, role: user.role, email: user.email });
-  } catch (error) { return { error: error instanceof Error ? error.message : "Unable to sign in." }; }
+  } catch (error) {
+    console.error("[loginAction] Sign-in failed", error);
+    return { error: "Unable to sign in. Please try again." };
+  }
   redirect("/admin");
 }
 
@@ -126,7 +129,10 @@ export async function submitEnquiryAction(_: FormState, formData: FormData): Pro
     }
     revalidatePath("/admin/enquiries");
     return { success: "Your request has been received. The IGP team will review the information you provided." };
-  } catch (error) { return { error: error instanceof Error ? error.message : "We could not submit your request. Please try again." }; }
+  } catch (error) {
+    console.error("[submitEnquiryAction] Enquiry submission failed", error);
+    return { error: "We could not submit your request. Please try again." };
+  }
 }
 
 export async function updateEnquiryStatusAction(formData: FormData) {
