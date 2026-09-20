@@ -1,0 +1,2 @@
+"use client";
+export default function Error({ reset }: { error: Error & { digest?: string }; reset: () => void }) { return <div className="page shell empty-state page-not-found"><p className="eyebrow">Something went wrong</p><h1>We could not load that page.</h1><p>Please try again. If the problem continues, use the quote request form to contact IGP.</p><button className="button button-primary" onClick={reset}>Try again</button></div>; }

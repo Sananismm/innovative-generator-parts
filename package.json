@@ -1,0 +1,45 @@
+{
+  "name": "innovative-generator-parts",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=20.9.0"
+  },
+  "scripts": {
+    "images:sync": "node scripts/sync-product-images.mjs",
+    "dev": "npm run images:sync && next dev",
+    "build": "npm run images:sync && prisma generate && next build",
+    "start": "next start",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:e2e": "playwright test",
+    "db:generate": "prisma generate",
+    "db:migrate": "prisma migrate dev",
+    "db:deploy": "prisma migrate deploy",
+    "db:seed": "tsx prisma/seed.ts"
+  },
+  "dependencies": {
+    "@prisma/client": "^6.15.0",
+    "@vercel/blob": "^2.8.0",
+    "bcryptjs": "^3.0.2",
+    "jose": "^6.0.12",
+    "next": "^16.0.0",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "zod": "^4.1.5"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.55.0",
+    "@types/node": "^22.15.0",
+    "@types/react": "^19.1.11",
+    "@types/react-dom": "^19.1.7",
+    "caniuse-lite": "^1.0.30001810",
+    "effect": "^3.21.0",
+    "prisma": "^6.15.0",
+    "tsx": "^4.20.3",
+    "typescript": "^5.9.2",
+    "vitest": "^5.0.1"
+  }
+}

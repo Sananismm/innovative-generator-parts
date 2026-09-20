@@ -1,0 +1,187 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMIN
+  EDITOR
+  CUSTOMER
+}
+
+enum ProductStatus {
+  DRAFT
+  PUBLISHED
+  ARCHIVED
+}
+
+enum EnquiryStatus {
+  NEW
+  REVIEWING
+  RESPONDED
+  CLOSED
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  name         String?
+  passwordHash String
+  role         Role     @default(EDITOR)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  products     Product[] @relation("ProductEditor")
+  passwordResetTokens PasswordResetToken[]
+}
+
+model Category {
+  id             String   @id @default(cuid())
+  name           String   @unique
+  slug           String   @unique
+  description    String?
+  image           String?
+  imageAlt        String?
+  sortOrder       Int      @default(0)
+  status          ProductStatus @default(PUBLISHED)
+  seoTitle        String?
+  seoDescription  String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  products        Product[]
+}
+
+model Product {
+  id                    String        @id @default(cuid())
+  name                  String
+  slug                  String        @unique
+  shortDescription      String?
+  description           String?
+  workingPrinciple      String
+  dailyUse              String
+  manufacturer          String?
+  partNumber            String?
+  oemReference          String?
+  compatibleBrands      String[]      @default([])
+  compatibleModels      String[]      @default([])
+  engineFamily          String?
+  attributes            Json?
+  image                 String?
+  imageAlt              String?
+  featured              Boolean       @default(false)
+  popular               Boolean       @default(false)
+  status                ProductStatus @default(DRAFT)
+  seoTitle              String?
+  seoDescription        String?
+  categoryId            String
+  category              Category      @relation(fields: [categoryId], references: [id], onDelete: Restrict)
+  images                ProductImage[]
+  tags                  ProductTag[]
+  redirects             ProductRedirect[]
+  editedById            String?
+  editedBy              User?         @relation("ProductEditor", fields: [editedById], references: [id], onDelete: SetNull)
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
+
+  @@index([categoryId, status])
+  @@index([status, featured])
+  @@index([partNumber])
+  @@index([manufacturer])
+}
+
+model ProductImage {
+  id        String   @id @default(cuid())
+  url       String
+  alt       String?
+  sortOrder Int      @default(0)
+  productId String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+}
+
+model ProductRedirect {
+  id        String   @id @default(cuid())
+  oldSlug   String   @unique
+  productId String
+  product   Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  createdAt DateTime @default(now())
+}
+
+model Tag {
+  id       String       @id @default(cuid())
+  name     String       @unique
+  slug     String       @unique
+  products ProductTag[]
+}
+
+model ProductTag {
+  productId String
+  tagId     String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  tag       Tag     @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([productId, tagId])
+}
+
+model Enquiry {
+  id               String        @id @default(cuid())
+  name             String
+  company          String?
+  email            String
+  phone            String?
+  productId        String?
+  productName      String?
+  partNumber       String?
+  generatorBrand   String?
+  generatorModel   String?
+  engineManufacturer String?
+  serialNumber     String?
+  quantity         Int?
+  message          String?
+  status           EnquiryStatus @default(NEW)
+  attachments      EnquiryAttachment[]
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+
+  @@index([status, createdAt])
+  @@index([email])
+}
+
+model EnquiryAttachment {
+  id          String   @id @default(cuid())
+  url         String
+  filename    String
+  contentType String
+  size        Int
+  enquiryId   String
+  enquiry     Enquiry  @relation(fields: [enquiryId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+}
+
+model SiteSetting {
+  key       String   @id
+  value     Json
+  updatedAt DateTime @updatedAt
+}
+
+model LoginAttempt {
+  id        String   @id @default(cuid())
+  key       String
+  createdAt DateTime @default(now())
+
+  @@index([key, createdAt])
+}
+
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  tokenHash String   @unique
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([userId, expiresAt])
+}

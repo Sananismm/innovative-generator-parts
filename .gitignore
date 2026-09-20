@@ -4,3 +4,7 @@ qa/
 .env
 .env.*
 node_modules/
+.next/
+.vercel/
+public/uploads/
+*.tsbuildinfo

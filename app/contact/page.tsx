@@ -1,0 +1,5 @@
+import type { Metadata } from "next";
+import Link from "next/link";
+
+export const metadata: Metadata = { title: "Contact", description: "Contact Innovative Generator Parts for catalogue and part-identification support.", alternates: { canonical: "/contact" } };
+export default function ContactPage() { return <div className="page shell contact-page"><nav className="breadcrumbs" aria-label="Breadcrumb"><Link href="/">Home</Link><span>/</span><span>Contact</span></nav><p className="eyebrow">Contact and support</p><h1>Start with what you know about the part.</h1><p className="lead">Use the structured quote request to provide a product name, part number, generator brand or model, and a reference photo where available.</p><div className="contact-actions"><Link className="button button-primary" href="/request-quote">Request a quote <span aria-hidden="true">↗</span></Link><Link className="button button-outline" href="/products">Browse the catalogue</Link></div><aside><h2>Contact details</h2><p>Phone, email, address and business hours will appear here after they are supplied through the approved site settings process.</p></aside></div>; }

@@ -1,0 +1,14 @@
+"use client";
+
+import { useActionState } from "react";
+import { saveCategoryAction, type FormState } from "@/app/actions";
+
+type Category = { id: string; name: string; slug: string; description: string | null; image: string | null; imageAlt: string | null; sortOrder: number; status: "DRAFT" | "PUBLISHED" | "ARCHIVED"; seoTitle: string | null; seoDescription: string | null };
+
+export function CategoryForm({ category }: { category?: Category }) {
+  const [state, action, pending] = useActionState(saveCategoryAction, {} as FormState);
+  const error = (field: string) => state.fieldErrors?.[field]?.[0];
+  return <form className="admin-form" action={action}><input type="hidden" name="id" value={category?.id || ""} /><fieldset><legend>Category details</legend><Field label="Name" error={error("name")}><input name="name" required defaultValue={category?.name} /></Field><Field label="URL slug" error={error("slug")}><input name="slug" required pattern="[a-z0-9]+(?:-[a-z0-9]+)*" defaultValue={category?.slug} /></Field><Field label="Sort order" error={error("sortOrder")}><input name="sortOrder" type="number" min="0" max="999" defaultValue={category?.sortOrder ?? 0} /></Field><Field label="Status" error={error("status")}><select name="status" defaultValue={category?.status || "PUBLISHED"}><option value="DRAFT">Draft</option><option value="PUBLISHED">Published</option><option value="ARCHIVED">Archived</option></select></Field><Field label="Description" error={error("description")} full><textarea name="description" rows={4} maxLength={1000} defaultValue={category?.description || ""} /></Field></fieldset><fieldset><legend>Image and search</legend><Field label="Image URL" error={error("image")} full><input name="image" maxLength={2048} defaultValue={category?.image || ""} placeholder="/assets/products/example.webp" /></Field><Field label="Image alt text" error={error("imageAlt")} full><input name="imageAlt" maxLength={180} defaultValue={category?.imageAlt || ""} /></Field><Field label="SEO title" error={error("seoTitle")} full><input name="seoTitle" maxLength={70} defaultValue={category?.seoTitle || ""} /></Field><Field label="SEO description" error={error("seoDescription")} full><textarea name="seoDescription" maxLength={160} rows={3} defaultValue={category?.seoDescription || ""} /></Field></fieldset>{state.error && <p className="form-message error" role="alert">{state.error}</p>}{state.success && <p className="form-message success" role="status">{state.success}</p>}<button className="button button-primary" disabled={pending}>{pending ? "Saving…" : "Save category"}</button></form>;
+}
+
+function Field({ label, error, full, children }: { label: string; error?: string; full?: boolean; children: React.ReactNode }) { return <label className={`admin-field ${full ? "field-full" : ""}`}>{label}{children}{error && <span className="field-error" role="alert">{error}</span>}</label>; }
