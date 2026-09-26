@@ -1,9 +1,13 @@
 import bcrypt from "bcryptjs";
 import { PrismaClient, ProductStatus, Role } from "@prisma/client";
+import { PrismaNeon } from "@prisma/adapter-neon";
 import { getLegacyCatalogue, legacyProductSlug } from "../lib/legacy-catalogue";
 import { slugify } from "../lib/utils";
 
-const prisma = new PrismaClient();
+const connectionString = process.env.DATABASE_URL;
+if (!connectionString) throw new Error("DATABASE_URL must be set before seeding.");
+
+const prisma = new PrismaClient({ adapter: new PrismaNeon({ connectionString }) });
 
 async function main() {
   const catalogue = getLegacyCatalogue();

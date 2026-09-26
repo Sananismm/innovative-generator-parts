@@ -18,28 +18,44 @@
     "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev",
     "db:deploy": "prisma migrate deploy",
-    "db:seed": "tsx prisma/seed.ts"
+    "db:seed": "tsx prisma/seed.ts",
+    "dev:vinext": "vinext dev --port 3001",
+    "build:vinext": "vinext build",
+    "start:vinext": "wrangler dev --config dist/server/wrangler.json",
+    "deploy:vinext": "vinext-cloudflare deploy --config dist/server/wrangler.json --experimental-warm-cdn-cache",
+    "deploy:response-store": "wrangler deploy --config wrangler.response-store.jsonc"
   },
   "dependencies": {
+    "@cloudflare/workers-response-store": "^0.1.0-beta.0",
+    "@neondatabase/serverless": "^1.1.0",
+    "@prisma/adapter-neon": "^6.19.3",
     "@prisma/client": "^6.15.0",
     "@vercel/blob": "^2.8.0",
+    "@vinext/cloudflare": "^1.0.0-beta.8",
     "bcryptjs": "^3.0.2",
     "jose": "^6.0.12",
     "next": "^16.0.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
+    "react-server-dom-webpack": "^19.3.0",
+    "vinext": "^1.0.0-beta.10",
     "zod": "^4.1.5"
   },
   "devDependencies": {
+    "@cloudflare/vite-plugin": "^1.56.0",
     "@playwright/test": "^1.55.0",
     "@types/node": "^22.15.0",
     "@types/react": "^19.1.11",
     "@types/react-dom": "^19.1.7",
+    "@vitejs/plugin-react": "^6.1.1",
+    "@vitejs/plugin-rsc": "^0.5.35",
     "caniuse-lite": "^1.0.30001810",
     "effect": "^3.21.0",
     "prisma": "^6.15.0",
     "tsx": "^4.20.3",
     "typescript": "^5.9.2",
-    "vitest": "^5.0.1"
+    "vite": "^8.3.0",
+    "vitest": "^5.0.1",
+    "wrangler": "^4.135.0"
   }
 }
