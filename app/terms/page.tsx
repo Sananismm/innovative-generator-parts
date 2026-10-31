@@ -1,1 +1,3 @@
+import type { Metadata } from "next";
+export const metadata: Metadata = { title: "Terms of use", alternates: { canonical: "/terms" } };
 export default function TermsPage() { return <div className="page shell legal"><p className="eyebrow">Legal review required</p><h1>Terms of use</h1><p>A client-approved set of terms is required before launch. Catalogue images and descriptions assist with component identification; prices, availability, fitment and supply terms must be confirmed by IGP.</p></div>; }

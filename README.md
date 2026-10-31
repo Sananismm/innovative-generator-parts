@@ -17,7 +17,7 @@ Product images are maintained in `assets/products/`. `npm run dev` and `npm run 
 
 ## Run locally
 
-Use Node 20.9 or newer. Copy `.env.example` to `.env`, provide a real PostgreSQL connection and set a high-entropy `AUTH_SECRET`.
+Use Node 24 as specified in `package.json`. Copy `.env.example` to `.env`, provide a real PostgreSQL connection and set a high-entropy `AUTH_SECRET`.
 
 ```sh
 npm install
@@ -36,6 +36,8 @@ Open `http://localhost:3000`. The public catalogue has a safe read-only fallback
 | `DATABASE_URL` | PostgreSQL connection string. Required for administration and enquiry storage. |
 | `AUTH_SECRET` | At least 32 random bytes, used to sign the HTTP-only session. |
 | `APP_URL` | Canonical HTTPS production URL, used for metadata and origin checks. |
+| `NEXT_PUBLIC_WHATSAPP_NUMBER` | Public business WhatsApp number in international digits; omit to hide WhatsApp links. |
+| `NEXT_PUBLIC_SITE_URL` | Optional public origin used in WhatsApp messages; defaults to `APP_URL`. Update when the domain changes. |
 | `BLOB_READ_WRITE_TOKEN` | Optional Vercel Blob token for quote attachments. |
 | `SEED_ADMIN_EMAIL` / `SEED_ADMIN_PASSWORD` | Optional initial administrator. The seed refuses example values and passwords below 12 characters. |
 
@@ -71,3 +73,9 @@ The test suite confirms all 80 supplied products are retained with unique public
 4. Confirm the generated sitemap, canonical URLs, quote submission and role access against the deployed site.
 
 `next build` is the build command. The current private static deployment is not a substitute for this server-rendered build because it cannot provide database persistence or authenticated administration.
+
+## Cloudflare Workers / vinext
+
+The separate vinext deployment uses `wrangler.jsonc` and requires the `RESPONSE_STORE` service and `IMAGES` binding configured there. Run `npm run dev:vinext` for local development and `npm run build:vinext` to build. Configure `DATABASE_URL`, `AUTH_SECRET`, `APP_URL` and any optional variables as Worker secrets or local development variables. Provision the response-store service separately using the existing `deploy:response-store` script. Deployment requires a Cloudflare account and appropriate permissions.
+
+The vinext build writes to `dist/`, which also contains tracked legacy static files in this repository; back up that directory before a vinext build until those legacy files are deliberately retired. Do not commit generated files or local secrets. Keep the Next.js and vinext deployment paths verified independently.
