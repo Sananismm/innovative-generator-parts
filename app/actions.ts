@@ -121,13 +121,13 @@ export async function submitEnquiryAction(_: FormState, formData: FormData): Pro
     const parsed = enquirySchema.safeParse(raw);
     if (!parsed.success) return { error: "Please correct the highlighted information.", fieldErrors: parsed.error.flatten().fieldErrors };
     await enforceEnquiryRateLimit(parsed.data.email);
-    const enquiry = await db.enquiry.create({ data: { ...parsed.data, productId: parsed.data.productId || null, quantity: parsed.data.quantity ?? null } });
     const attachment = formData.get("attachment");
-    if (attachment instanceof File && attachment.size) {
-      const upload = await storeUpload(attachment, "enquiries");
-      await db.enquiryAttachment.create({ data: { ...upload, enquiryId: enquiry.id } });
-    }
-    revalidatePath("/admin/enquiries");
+    const upload = attachment instanceof File && attachment.size ? await storeUpload(attachment, "enquiries") : null;
+    await db.enquiry.create({ data: {
+      ...parsed.data, productId: parsed.data.productId || null, quantity: parsed.data.quantity ?? null,
+      ...(upload ? { attachments: { create: upload } } : {}),
+    } });
+    try { revalidatePath("/admin/enquiries"); } catch (error) { console.error("[submitEnquiryAction] Cache revalidation failed", error); }
     return { success: "Your request has been received. The IGP team will review the information you provided." };
   } catch (error) {
     console.error("[submitEnquiryAction] Enquiry submission failed", error);
