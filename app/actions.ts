@@ -1,6 +1,7 @@
 "use server";
 
 import bcrypt from "bcryptjs";
+import { randomUUID } from "node:crypto";
 import { EnquiryStatus, ProductStatus, Role } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
@@ -115,20 +116,34 @@ export async function saveCategoryAction(_: FormState, formData: FormData): Prom
 }
 
 export async function submitEnquiryAction(_: FormState, formData: FormData): Promise<FormState> {
+  const success = "Your request has been received. The IGP team will review the information you provided.";
   try {
     await assertSameOrigin();
-    const raw = Object.fromEntries([...formData.entries()].filter(([key]) => key !== "attachment"));
+    const submissionId = stringValue(formData, "submissionId") || randomUUID();
+    if (!/^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(submissionId)) return { error: "We could not submit your request. Please reload the page and try again." };
+    const raw = Object.fromEntries([...formData.entries()].filter(([key]) => key !== "attachment" && key !== "submissionId"));
     const parsed = enquirySchema.safeParse(raw);
     if (!parsed.success) return { error: "Please correct the highlighted information.", fieldErrors: parsed.error.flatten().fieldErrors };
+    const existing = await db.enquiry.findUnique({ where: { id: submissionId }, select: { email: true } });
+    if (existing) return existing.email.toLowerCase() === parsed.data.email.toLowerCase() ? { success } : { error: "We could not submit your request. Please reload the page and try again." };
     await enforceEnquiryRateLimit(parsed.data.email);
     const attachment = formData.get("attachment");
     const upload = attachment instanceof File && attachment.size ? await storeUpload(attachment, "enquiries") : null;
-    await db.enquiry.create({ data: {
-      ...parsed.data, productId: parsed.data.productId || null, quantity: parsed.data.quantity ?? null,
-      ...(upload ? { attachments: { create: upload } } : {}),
-    } });
+    try {
+      await db.enquiry.create({ data: {
+        ...parsed.data, id: submissionId, productId: parsed.data.productId || null, quantity: parsed.data.quantity ?? null,
+        ...(upload ? { attachments: { create: upload } } : {}),
+      } });
+    } catch (error) {
+      // A timeout can occur after commit. Check before telling the customer to retry.
+      try {
+        const saved = await db.enquiry.findUnique({ where: { id: submissionId }, select: { email: true } });
+        if (saved && saved.email.toLowerCase() === parsed.data.email.toLowerCase()) return { success };
+      } catch { /* Preserve the submission ID for a safe retry when the database recovers. */ }
+      throw error;
+    }
     try { revalidatePath("/admin/enquiries"); } catch (error) { console.error("[submitEnquiryAction] Cache revalidation failed", error); }
-    return { success: "Your request has been received. The IGP team will review the information you provided." };
+    return { success };
   } catch (error) {
     console.error("[submitEnquiryAction] Enquiry submission failed", error);
     return { error: "We could not submit your request. Please try again." };

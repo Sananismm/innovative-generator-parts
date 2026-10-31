@@ -7,9 +7,14 @@ const initialState: FormState = {};
 export function QuoteForm({ productName, productId }: { productName?: string; productId?: string }) {
   const [state, action, pending] = useActionState(submitEnquiryAction, initialState);
   const form = useRef<HTMLFormElement>(null);
-  useEffect(() => { if (state.success) form.current?.reset(); }, [state.success]);
+  const submissionId = useRef("");
+  useEffect(() => { if (state.success) { submissionId.current = ""; form.current?.reset(); } }, [state.success]);
   const error = (name: string) => state.fieldErrors?.[name]?.[0];
-  return <form ref={form} action={action} className="quote-form" noValidate><input type="hidden" name="productId" value={productId || ""} />
+  return <form ref={form} action={action} className="quote-form" noValidate onSubmit={event => {
+    const id = event.currentTarget.elements.namedItem("submissionId") as HTMLInputElement | null;
+    if (!submissionId.current) submissionId.current = crypto.randomUUID();
+    if (id) id.value = submissionId.current;
+  }}><input type="hidden" name="submissionId" defaultValue="" /><input type="hidden" name="productId" value={productId || ""} />
     <div className="form-grid"><Field label="Name" required error={error("name")}><input name="name" autoComplete="name" required maxLength={120} /></Field><Field label="Company" error={error("company")}><input name="company" autoComplete="organization" maxLength={160} /></Field><Field label="Email" required error={error("email")}><input name="email" type="email" autoComplete="email" required maxLength={254} /></Field><Field label="Phone" error={error("phone")}><input name="phone" type="tel" autoComplete="tel" maxLength={40} /></Field>
       <Field label="Product or part required" error={error("productName")} full><input name="productName" defaultValue={productName} maxLength={200} /></Field><Field label="Part number" error={error("partNumber")}><input name="partNumber" maxLength={120} /></Field><Field label="Required quantity" error={error("quantity")}><input name="quantity" type="number" min="1" step="1" /></Field>
       <Field label="Generator brand" error={error("generatorBrand")}><input name="generatorBrand" maxLength={120} /></Field><Field label="Generator model" error={error("generatorModel")}><input name="generatorModel" maxLength={160} /></Field><Field label="Engine manufacturer" error={error("engineManufacturer")}><input name="engineManufacturer" maxLength={120} /></Field><Field label="Serial number" error={error("serialNumber")}><input name="serialNumber" maxLength={160} /></Field>

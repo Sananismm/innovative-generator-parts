@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
-const mocks = vi.hoisted(() => ({ create: vi.fn(), upload: vi.fn(), revalidate: vi.fn() }));
-vi.mock("@/lib/db", () => ({ db: { enquiry: { create: mocks.create } } }));
+const mocks = vi.hoisted(() => ({ create: vi.fn(), findUnique: vi.fn(), upload: vi.fn(), revalidate: vi.fn() }));
+vi.mock("@/lib/db", () => ({ db: { enquiry: { create: mocks.create, findUnique: mocks.findUnique } } }));
 vi.mock("@/lib/storage/uploads", () => ({ storeUpload: mocks.upload }));
 vi.mock("@/lib/auth", () => ({ assertSameOrigin: vi.fn(), enforceEnquiryRateLimit: vi.fn() }));
 vi.mock("next/cache", () => ({ revalidatePath: mocks.revalidate }));
@@ -17,7 +17,7 @@ function request(withFile = true) {
 }
 
 describe("enquiry submission", () => {
-  beforeEach(() => { vi.clearAllMocks(); mocks.create.mockResolvedValue({ id: "test" }); });
+  beforeEach(() => { vi.resetAllMocks(); mocks.create.mockResolvedValue({ id: "test" }); mocks.findUnique.mockResolvedValue(null); });
   it("does not create an enquiry when uploading fails", async () => {
     mocks.upload.mockRejectedValueOnce(new Error("upload failed"));
     const result = await submitEnquiryAction({}, request());
@@ -34,5 +34,17 @@ describe("enquiry submission", () => {
     mocks.revalidate.mockImplementationOnce(() => { throw new Error("cache unavailable"); });
     expect((await submitEnquiryAction({}, request(false))).success).toBeTruthy();
     expect(mocks.create).toHaveBeenCalledOnce();
+  });
+  it("recognizes an existing submission and avoids creating or uploading it again", async () => {
+    const form = request(); form.set("submissionId", "dca477e2-6d77-4e9f-99ac-a694618fc32d");
+    mocks.findUnique.mockResolvedValueOnce({ email: "customer@example.test" });
+    expect((await submitEnquiryAction({}, form)).success).toBeTruthy();
+    expect(mocks.create).not.toHaveBeenCalled(); expect(mocks.upload).not.toHaveBeenCalled();
+  });
+  it("recognizes a successful commit even when the create call times out", async () => {
+    const form = request(false); form.set("submissionId", "dca477e2-6d77-4e9f-99ac-a694618fc32d");
+    mocks.create.mockRejectedValueOnce(new Error("timeout"));
+    mocks.findUnique.mockResolvedValueOnce(null).mockResolvedValueOnce({ email: "customer@example.test" });
+    expect((await submitEnquiryAction({}, form)).success).toBeTruthy();
   });
 });
