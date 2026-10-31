@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { Footer } from "@/components/layout/footer";
 import { Header } from "@/components/layout/header";
+import { WhatsAppBubble } from "@/components/layout/whatsapp-bubble";
 import { serializeJsonLd } from "@/lib/utils";
 
 const origin = process.env.APP_URL || "http://localhost:3000";
@@ -19,5 +20,5 @@ export const viewport: Viewport = { width: "device-width", initialScale: 1, them
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   const organization = { "@context": "https://schema.org", "@type": "Organization", name: "Innovative Generator Parts", url: origin, logo: `${origin}/assets/igp-logo.png` };
   const website = { "@context": "https://schema.org", "@type": "WebSite", name: "Innovative Generator Parts", url: origin, potentialAction: { "@type": "SearchAction", target: `${origin}/products?query={search_term_string}`, "query-input": "required name=search_term_string" } };
-  return <html lang="en"><body><script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd([organization, website]) }} /><a className="skip-link" href="#main">Skip to content</a><Header /><main id="main">{children}</main><Footer /></body></html>;
+  return <html lang="en"><body><script type="application/ld+json" dangerouslySetInnerHTML={{ __html: serializeJsonLd([organization, website]) }} /><a className="skip-link" href="#main">Skip to content</a><Header /><main id="main">{children}</main><Footer /><WhatsAppBubble /></body></html>;
 }
