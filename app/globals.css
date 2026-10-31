@@ -33,6 +33,9 @@
 .whatsapp-bubble svg { width:27px; height:27px; flex:none }
 .whatsapp-bubble:hover { background:#106a38; transform:translateY(-2px) }
 .whatsapp-bubble:focus-visible { outline:3px solid #123e77; outline-offset:3px }
+.whatsapp-link { display:inline-flex; align-items:center; gap:5px }
+.whatsapp-button { gap:9px }
+.whatsapp-link svg,.whatsapp-button svg { width:18px; height:18px; flex:none }
 @media (max-width:600px) { .whatsapp-bubble { right:max(16px,env(safe-area-inset-right)); bottom:max(16px,env(safe-area-inset-bottom)); width:56px; padding:0 }.whatsapp-bubble-label { display:none } }
 
 /* Reveal the public navigation while scrolling upward. */
