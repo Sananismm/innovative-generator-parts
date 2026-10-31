@@ -57,5 +57,19 @@
     "vite": "^8.3.0",
     "vitest": "^5.0.1",
     "wrangler": "^4.135.0"
+  },
+  "overrides": {
+    "@vercel/blob": {
+      "undici": "6.29.1"
+    },
+    "@vercel/cli-config": {
+      "zod": "4.6.7"
+    },
+    "satori": {
+      "fflate": "0.7.5"
+    },
+    "@prisma/config": {
+      "deepmerge-ts": "8.0.2"
+    }
   }
 }

@@ -63,6 +63,10 @@ npm run test
 npm run build
 ```
 
+If `npm run typecheck` reports missing exports in `.next/types/validator.ts` after a vinext build, run `npx next typegen` first. Next.js and vinext currently generate different route types in the same `.next/types` directory.
+
+The dependency overrides in `package.json` patch transitive security advisories while retaining Prisma 6.19. In particular, `@prisma/config` is pinned to `deepmerge-ts` 8 even though Prisma 6 declares version 7; verify Prisma generation, validation, migration diff, and both application builds before changing that override or upgrading Prisma. Avoid `npm audit fix --force`, which may switch major versions.
+
 The test suite confirms all 80 supplied products are retained with unique public slugs and exercises core server validation. Build with a production `DATABASE_URL` before release; a migration and seed must succeed against the target database.
 
 ## Vercel deployment
