@@ -7,9 +7,7 @@ function createPrismaClient() {
   const log: Prisma.LogLevel[] = process.env.NODE_ENV === "development" ? ["error", "warn"] : ["error"];
   const connectionString = process.env.DATABASE_URL;
 
-  // Public catalogue pages retain their no-database fallback. Database-backed
-  // paths only create an adapter when DATABASE_URL is configured.
-  if (!connectionString) return new PrismaClient({ log });
+  if (!connectionString) throw new Error("DATABASE_URL is required for database operations.");
 
   return new PrismaClient({
     adapter: new PrismaNeon({ connectionString }),
@@ -17,6 +15,14 @@ function createPrismaClient() {
   });
 }
 
-export const db = globalForPrisma.prisma ?? createPrismaClient();
+let client: PrismaClient | undefined;
 
-if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = db;
+// Catalogue fallback must remain usable without constructing a database client.
+export const db = new Proxy({} as PrismaClient, {
+  get(_target, property) {
+    client ??= globalForPrisma.prisma ?? createPrismaClient();
+    if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = client;
+    const value = Reflect.get(client, property, client);
+    return typeof value === "function" ? value.bind(client) : value;
+  },
+});

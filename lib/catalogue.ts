@@ -76,7 +76,10 @@ export async function getProducts(filters: CatalogueFilters = {}) {
         ...(filters.category ? { category: { slug: filters.category } } : {}),
         ...(filters.manufacturer ? { manufacturer: { equals: filters.manufacturer, mode: "insensitive" } } : {}),
         ...(filters.tag ? { tags: { some: { tag: { slug: filters.tag } } } } : {}),
-        ...(search ? { OR: ["name", "shortDescription", "description", "workingPrinciple", "dailyUse", "manufacturer", "partNumber", "oemReference"].map((field) => ({ [field]: { contains: search, mode: "insensitive" } })) } : {}),
+        ...(search ? { OR: [
+          ...["name", "shortDescription", "description", "workingPrinciple", "dailyUse", "manufacturer", "partNumber", "oemReference"].map((field) => ({ [field]: { contains: search, mode: "insensitive" as const } })),
+          ...(/^automatic\s+voltage\s+regulator$/i.test(search) ? [{ name: { equals: "AVR", mode: "insensitive" as const } }] : []),
+        ] } : {}),
       };
       const orderBy: Prisma.ProductOrderByWithRelationInput[] = filters.sort === "name" ? [{ name: "asc" }] : filters.sort === "latest" ? [{ createdAt: "desc" }] : [{ featured: "desc" }, { name: "asc" }];
       const [items, total] = await Promise.all([db.product.findMany({ where, orderBy, skip: (page - 1) * pageSize, take: pageSize, include: { category: true } }), db.product.count({ where })]);
