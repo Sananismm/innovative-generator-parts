@@ -1,8 +1,7 @@
 import bcrypt from "bcryptjs";
-import { PrismaClient, ProductStatus, Role } from "@prisma/client";
+import { PrismaClient, Role } from "@prisma/client";
 import { PrismaNeon } from "@prisma/adapter-neon";
-import { getLegacyCatalogue, legacyProductSlug } from "../lib/legacy-catalogue";
-import { slugify } from "../lib/utils";
+import { importInitialCatalogue } from "./seed-catalogue";
 
 const connectionString = process.env.DATABASE_URL;
 if (!connectionString) throw new Error("DATABASE_URL must be set before seeding.");
@@ -10,24 +9,12 @@ if (!connectionString) throw new Error("DATABASE_URL must be set before seeding.
 const prisma = new PrismaClient({ adapter: new PrismaNeon({ connectionString }) });
 
 async function main() {
-  const catalogue = getLegacyCatalogue();
-  const categories = await Promise.all(catalogue.categories.map((name, sortOrder) => prisma.category.upsert({
-    where: { slug: slugify(name) },
-    update: { name, sortOrder, status: ProductStatus.PUBLISHED },
-    create: { name, slug: slugify(name), sortOrder, status: ProductStatus.PUBLISHED },
-  })));
-  const categoryByName = new Map(categories.map((category) => [category.name, category.id]));
-  for (const product of catalogue.products) {
-    await prisma.product.upsert({
-      where: { slug: legacyProductSlug(product) },
-      update: { name: product.name, workingPrinciple: product.workingPrinciple, dailyUse: product.dailyUse, shortDescription: product.dailyUse, image: `/${product.image}`, imageAlt: `${product.name} generator part`, featured: product.featured, popular: product.featured, status: ProductStatus.PUBLISHED, categoryId: categoryByName.get(product.category)! },
-      create: { name: product.name, slug: legacyProductSlug(product), workingPrinciple: product.workingPrinciple, dailyUse: product.dailyUse, shortDescription: product.dailyUse, image: `/${product.image}`, imageAlt: `${product.name} generator part`, featured: product.featured, popular: product.featured, status: ProductStatus.PUBLISHED, categoryId: categoryByName.get(product.category)! },
-    });
-  }
+  const imported = await prisma.$transaction(importInitialCatalogue, { timeout: 60000 });
+  console.info(imported ? "Initial catalogue imported." : "Catalogue already contains data; initial import skipped.");
   const email = process.env.SEED_ADMIN_EMAIL?.trim().toLowerCase();
   const password = process.env.SEED_ADMIN_PASSWORD;
   if (email && password && password.length >= 12 && !email.endsWith("@example.com")) {
-    await prisma.user.upsert({ where: { email }, update: { role: Role.ADMIN }, create: { email, role: Role.ADMIN, passwordHash: await bcrypt.hash(password, 12) } });
+    await prisma.user.upsert({ where: { email }, update: {}, create: { email, role: Role.ADMIN, passwordHash: await bcrypt.hash(password, 12) } });
   } else {
     console.warn("Admin user skipped. Set a non-example SEED_ADMIN_EMAIL and a 12+ character SEED_ADMIN_PASSWORD before seeding production.");
   }
