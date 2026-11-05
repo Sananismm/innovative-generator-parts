@@ -1,8 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
+import { Prisma } from "@prisma/client";
 
-const mocks = vi.hoisted(() => ({ create: vi.fn(), findUnique: vi.fn(), upload: vi.fn(), revalidate: vi.fn() }));
+const mocks = vi.hoisted(() => ({ create: vi.fn(), findUnique: vi.fn(), upload: vi.fn(), remove: vi.fn(), revalidate: vi.fn() }));
 vi.mock("@/lib/db", () => ({ db: { enquiry: { create: mocks.create, findUnique: mocks.findUnique } } }));
-vi.mock("@/lib/storage/uploads", () => ({ storeUpload: mocks.upload }));
+vi.mock("@/lib/storage/uploads", () => ({ storeUpload: mocks.upload, deleteUpload: mocks.remove }));
 vi.mock("@/lib/auth", () => ({ assertSameOrigin: vi.fn(), enforceEnquiryRateLimit: vi.fn() }));
 vi.mock("next/cache", () => ({ revalidatePath: mocks.revalidate }));
 vi.mock("next/navigation", () => ({ redirect: vi.fn() }));
@@ -46,5 +47,19 @@ describe("enquiry submission", () => {
     mocks.create.mockRejectedValueOnce(new Error("timeout"));
     mocks.findUnique.mockResolvedValueOnce(null).mockResolvedValueOnce({ email: "customer@example.test" });
     expect((await submitEnquiryAction({}, form)).success).toBeTruthy();
+  });
+  it("cleans up its uploaded file after a definite rejected insert", async () => {
+    const upload = { url: "https://example.test/file", filename: "part.pdf", size: 4, contentType: "application/pdf" };
+    mocks.upload.mockResolvedValueOnce(upload);
+    mocks.create.mockRejectedValueOnce(new Prisma.PrismaClientKnownRequestError("constraint", { code: "P2003", clientVersion: "test" }));
+    expect((await submitEnquiryAction({}, request())).error).toBeTruthy();
+    expect(mocks.remove).toHaveBeenCalledWith(upload);
+  });
+  it("retains the file when a timeout leaves the commit outcome uncertain", async () => {
+    mocks.upload.mockResolvedValueOnce({ url: "https://example.test/file", filename: "part.pdf", size: 4, contentType: "application/pdf" });
+    mocks.create.mockRejectedValueOnce(new Error("timeout"));
+    mocks.findUnique.mockResolvedValueOnce(null).mockRejectedValueOnce(new Error("unavailable"));
+    expect((await submitEnquiryAction({}, request())).error).toBeTruthy();
+    expect(mocks.remove).not.toHaveBeenCalled();
   });
 });

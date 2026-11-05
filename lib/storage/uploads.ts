@@ -25,8 +25,16 @@ export async function storeUpload(file: File, prefix: "enquiries" | "products"):
   const token = process.env.BLOB_READ_WRITE_TOKEN;
   if (!token) throw new Error("File uploads are not configured yet. Please send the enquiry without an attachment or configure BLOB_READ_WRITE_TOKEN.");
   const { put } = await import("@vercel/blob");
-  const extension = file.name.split(".").pop()?.toLowerCase().replace(/[^a-z0-9]/g, "") || "bin";
+  const extension = ({ "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp", "application/pdf": "pdf" } as Record<string, string>)[file.type];
   const key = `${prefix}/${randomUUID()}.${extension}`;
   const result = await put(key, file, { access: "private", addRandomSuffix: false, token, contentType: file.type });
-  return { url: result.url, filename: file.name.slice(0, 180), contentType: file.type, size: file.size };
+  const filename = file.name.replace(/[\x00-\x1f\x7f/\\]/g, "_").slice(0, 180) || `attachment.${extension}`;
+  return { url: result.url, filename, contentType: file.type, size: file.size };
+}
+
+export async function deleteUpload(upload: StoredUpload) {
+  const token = process.env.BLOB_READ_WRITE_TOKEN;
+  if (!token) throw new Error("Private upload storage is not configured.");
+  const { del } = await import("@vercel/blob");
+  await del(upload.url, { token });
 }

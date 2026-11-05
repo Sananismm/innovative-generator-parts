@@ -44,8 +44,11 @@ export const getSession = cache(async (): Promise<Session | null> => {
 export async function requireRole(roles: Role[]) {
   const session = await getSession();
   if (!session) redirect("/login?next=/admin");
-  if (!roles.includes(session.role)) redirect("/admin?error=forbidden");
-  return session;
+  // A signed cookie may outlive the account or its permissions.
+  const user = await db.user.findUnique({ where: { id: session.userId }, select: { id: true, email: true, role: true } });
+  if (!user) redirect("/login?next=/admin");
+  if (!roles.includes(user.role)) redirect("/login?error=forbidden");
+  return { userId: user.id, email: user.email, role: user.role };
 }
 
 export async function assertSameOrigin() {
@@ -56,21 +59,22 @@ export async function assertSameOrigin() {
   if (origin && configured && origin !== configured) throw new Error("The request origin was not accepted.");
 }
 
+async function enforceRateLimit(key: string, windowMs: number, limit: number) {
+  await db.$transaction(async (tx) => {
+    // Serialize checks for the same key across application instances.
+    await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${key}, 0))`;
+    const count = await tx.loginAttempt.count({ where: { key, createdAt: { gte: new Date(Date.now() - windowMs) } } });
+    if (count >= limit) throw new Error("Too many attempts. Please try again later.");
+    await tx.loginAttempt.create({ data: { key } });
+  });
+  // Cleanup is best effort and must not produce unhandled promise rejections.
+  void db.loginAttempt.deleteMany({ where: { createdAt: { lt: new Date(Date.now() - 24 * 60 * 60 * 1000) } } }).catch(() => {});
+}
+
 export async function enforceLoginRateLimit(identifier: string) {
-  const since = new Date(Date.now() - 15 * 60 * 1000);
-  const key = `login:${identifier.toLowerCase()}`;
-  const count = await db.loginAttempt.count({ where: { key, createdAt: { gte: since } } });
-  if (count >= 8) throw new Error("Too many attempts. Please wait 15 minutes before trying again.");
-  await db.loginAttempt.create({ data: { key } });
-  // Keep the table compact without relying on an unreliable in-memory limiter.
-  void db.loginAttempt.deleteMany({ where: { createdAt: { lt: new Date(Date.now() - 24 * 60 * 60 * 1000) } } });
+  return enforceRateLimit(`login:${identifier.toLowerCase()}`, 15 * 60 * 1000, 8);
 }
 
 export async function enforceEnquiryRateLimit(identifier: string) {
-  const since = new Date(Date.now() - 60 * 60 * 1000);
-  const key = `enquiry:${identifier.toLowerCase()}`;
-  const count = await db.loginAttempt.count({ where: { key, createdAt: { gte: since } } });
-  if (count >= 5) throw new Error("Too many quote requests. Please wait an hour before sending another request.");
-  await db.loginAttempt.create({ data: { key } });
-  void db.loginAttempt.deleteMany({ where: { createdAt: { lt: new Date(Date.now() - 24 * 60 * 60 * 1000) } } });
+  return enforceRateLimit(`enquiry:${identifier.toLowerCase()}`, 60 * 60 * 1000, 5);
 }

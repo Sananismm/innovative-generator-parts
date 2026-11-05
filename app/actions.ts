@@ -2,12 +2,12 @@
 
 import bcrypt from "bcryptjs";
 import { randomUUID } from "node:crypto";
-import { EnquiryStatus, ProductStatus, Role } from "@prisma/client";
+import { EnquiryStatus, Prisma, ProductStatus, Role } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { clearSession, createSession, assertSameOrigin, enforceEnquiryRateLimit, enforceLoginRateLimit, requireRole } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { storeUpload } from "@/lib/storage/uploads";
+import { deleteUpload, storeUpload } from "@/lib/storage/uploads";
 import { enquirySchema } from "@/lib/validation/enquiry";
 import { categorySchema, productSchema } from "@/lib/validation/product";
 
@@ -135,6 +135,11 @@ export async function submitEnquiryAction(_: FormState, formData: FormData): Pro
         ...(upload ? { attachments: { create: upload } } : {}),
       } });
     } catch (error) {
+      // These constraint errors establish that this insert was rejected. A timeout
+      // or connection failure does not, so its file must be retained for review.
+      if (upload && error instanceof Prisma.PrismaClientKnownRequestError && ["P2000", "P2002", "P2003", "P2011", "P2012"].includes(error.code)) {
+        try { await deleteUpload(upload); } catch { console.error("[submitEnquiryAction] Rejected upload cleanup failed; manual review required."); }
+      }
       // A timeout can occur after commit. Check before telling the customer to retry.
       try {
         const saved = await db.enquiry.findUnique({ where: { id: submissionId }, select: { email: true } });
@@ -145,7 +150,7 @@ export async function submitEnquiryAction(_: FormState, formData: FormData): Pro
     try { revalidatePath("/admin/enquiries"); } catch (error) { console.error("[submitEnquiryAction] Cache revalidation failed", error); }
     return { success };
   } catch (error) {
-    console.error("[submitEnquiryAction] Enquiry submission failed", error);
+    console.error("[submitEnquiryAction] Enquiry submission failed.");
     return { error: "We could not submit your request. Please try again." };
   }
 }
