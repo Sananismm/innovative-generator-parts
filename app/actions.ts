@@ -39,8 +39,8 @@ export async function loginAction(_: FormState, formData: FormData): Promise<For
     const user = await db.user.findUnique({ where: { email } });
     if (!user || !(await bcrypt.compare(password, user.passwordHash))) return { error: "Email or password is incorrect." };
     await createSession({ userId: user.id, role: user.role, email: user.email });
-  } catch (error) {
-    console.error("[loginAction] Sign-in failed", error);
+  } catch {
+    console.error("[loginAction] Sign-in failed.");
     return { error: "Unable to sign in. Please try again." };
   }
   redirect("/admin");
@@ -147,7 +147,7 @@ export async function submitEnquiryAction(_: FormState, formData: FormData): Pro
       } catch { /* Preserve the submission ID for a safe retry when the database recovers. */ }
       throw error;
     }
-    try { revalidatePath("/admin/enquiries"); } catch (error) { console.error("[submitEnquiryAction] Cache revalidation failed", error); }
+    try { revalidatePath("/admin/enquiries"); } catch { console.error("[submitEnquiryAction] Cache revalidation failed."); }
     return { success };
   } catch (error) {
     console.error("[submitEnquiryAction] Enquiry submission failed.");
