@@ -39,7 +39,8 @@
 @media (max-width:600px) { .whatsapp-bubble { right:max(16px,env(safe-area-inset-right)); bottom:max(16px,env(safe-area-inset-bottom)); width:56px; padding:0 }.whatsapp-bubble-label { display:none } }
 
 /* Reveal the public navigation while scrolling upward. */
-.site-header { position:fixed; top:0; left:0; transition:transform .25s var(--ease),background-color .25s var(--ease),box-shadow .25s var(--ease) }
+.site-header { position:fixed; top:0; left:0; background:var(--navy-950); transition:transform .25s var(--ease),background-color .25s var(--ease),box-shadow .25s var(--ease) }
+.site-header[data-scrolled="false"]:has(~ main > .hero) { background:transparent }
 .site-header[data-scrolled="true"] { background:var(--navy-950); box-shadow:0 4px 18px #00163824 }
 .site-header[data-hidden="true"] { transform:translateY(-100%); pointer-events:none }
 .site-header[data-hidden="true"]:has(:focus-visible) { transform:translateY(0); pointer-events:auto }
