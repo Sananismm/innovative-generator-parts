@@ -4,12 +4,12 @@ Fill in the fields you want published and send this file back when you are ready
 
 ## Business contact details
 
-- Public business name:
-- Public phone number:
-- Public WhatsApp number (international format, including country code):
-- Public email address:
+- Public business name: Innovative Generator Parts
+- Public phone number: +92 300 8877677
+- Public WhatsApp number (international format, including country code): +92 300 8877677
+- Public email address: usm_tra@yahoo.com
 - Public address (only if customers should see it):
-- Service area / countries served:
+- Service area / countries served: All over Pakistan
 - Business hours and time zone:
 - Contact-page instructions or preferred contact method:
 - Social media profile links (only those approved for publication):

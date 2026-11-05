@@ -36,7 +36,7 @@ Open `http://localhost:3000`. The public catalogue has a safe read-only fallback
 | `DATABASE_URL` | PostgreSQL connection string. Required for administration and enquiry storage. |
 | `AUTH_SECRET` | At least 32 random bytes, used to sign the HTTP-only session. |
 | `APP_URL` | Canonical HTTPS production URL, used for metadata and origin checks. |
-| `NEXT_PUBLIC_WHATSAPP_NUMBER` | Public business WhatsApp number in international digits; omit to hide WhatsApp links. |
+| Public contact details | Maintained in `lib/contact.ts`, including the phone and WhatsApp number. The old `NEXT_PUBLIC_WHATSAPP_NUMBER` setting is no longer used. |
 | `NEXT_PUBLIC_SITE_URL` | Optional public origin used in WhatsApp messages; defaults to `APP_URL`. Update when the domain changes. |
 | `BLOB_READ_WRITE_TOKEN` | Optional Vercel Blob token for quote attachments. |
 | `SEED_ADMIN_EMAIL` / `SEED_ADMIN_PASSWORD` | Optional initial administrator. The seed refuses example values and passwords below 12 characters. |

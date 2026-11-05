@@ -1,9 +1,9 @@
+import { companyContact } from "@/lib/contact";
+
 type WhatsAppProduct = { name: string; slug: string };
 
 function whatsappLink(message: string) {
-  const phone = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER?.replace(/\D/g, "");
-  if (!phone) return null;
-  return `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
+  return `https://wa.me/${companyContact.whatsappDigits}?text=${encodeURIComponent(message)}`;
 }
 
 export function buildWhatsAppContactUrl() {
