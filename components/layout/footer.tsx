@@ -2,7 +2,8 @@ import Link from "next/link";
 import { getCategories } from "@/lib/catalogue";
 
 export async function Footer() {
-  const categories = await getCategories();
+  // Keep contact and legal pages available during a catalogue outage.
+  const categories = await getCategories().catch(() => []);
   return <footer className="site-footer"><div className="shell footer-grid">
     <section><p className="footer-kicker">INNOVATIVE GENERATOR PARTS</p><p className="footer-intro">A catalogue of generator components for maintenance, repair and dependable operation.</p><Link href="/request-quote" className="text-link">Need help identifying a part? <span>→</span></Link></section>
     <section><h2>Categories</h2>{categories.slice(0, 6).map(category => <Link key={category.id} href={`/categories/${category.slug}`}>{category.name}</Link>)}</section>

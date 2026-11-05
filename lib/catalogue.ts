@@ -5,6 +5,10 @@ import { getLegacyCatalogue, legacyProductSlug } from "@/lib/legacy-catalogue";
 import type { CatalogueCategory, CatalogueFilters, CatalogueProduct } from "@/lib/types";
 import { slugify } from "@/lib/utils";
 
+function ensureDevelopmentFallback() {
+  if (process.env.NODE_ENV === "production") throw new Error("Catalogue database is unavailable.");
+}
+
 const categoryDescriptions: Record<string, string> = {
   "Engine Parts": "Core engine components that support combustion, timing and mechanical power transfer.",
   "Fuel System": "Components that store, filter, meter and deliver diesel to the engine.",
@@ -59,8 +63,9 @@ export const getCategories = cache(async (): Promise<CatalogueCategory[]> => {
         include: { _count: { select: { products: { where: { status: ProductStatus.PUBLISHED } } } } },
       });
       return categories.map((category) => ({ id: category.id, name: category.name, slug: category.slug, description: category.description, image: category.image, imageAlt: category.imageAlt, sortOrder: category.sortOrder, productCount: category._count.products, seoTitle: category.seoTitle, seoDescription: category.seoDescription }));
-    } catch { /* A missing database must not make the initial catalogue unavailable. */ }
+    } catch { ensureDevelopmentFallback(); }
   }
+  ensureDevelopmentFallback();
   const source = getLegacyCatalogue();
   return source.categories.map((name, index) => ({ id: `legacy-category-${index + 1}`, name, slug: slugify(name), description: categoryDescriptions[name] ?? null, image: null, imageAlt: null, sortOrder: index, productCount: source.products.filter((product) => product.category === name).length, seoTitle: null, seoDescription: null }));
 });
@@ -73,7 +78,7 @@ export async function getProducts(filters: CatalogueFilters = {}) {
       const search = filters.query?.trim();
       const where: Prisma.ProductWhereInput = {
         status: ProductStatus.PUBLISHED,
-        ...(filters.category ? { category: { slug: filters.category } } : {}),
+        category: { status: ProductStatus.PUBLISHED, ...(filters.category ? { slug: filters.category } : {}) },
         ...(filters.manufacturer ? { manufacturer: { equals: filters.manufacturer, mode: "insensitive" } } : {}),
         ...(filters.tag ? { tags: { some: { tag: { slug: filters.tag } } } } : {}),
         ...(search ? { OR: [
@@ -84,8 +89,9 @@ export async function getProducts(filters: CatalogueFilters = {}) {
       const orderBy: Prisma.ProductOrderByWithRelationInput[] = filters.sort === "name" ? [{ name: "asc" }] : filters.sort === "latest" ? [{ createdAt: "desc" }] : [{ featured: "desc" }, { name: "asc" }];
       const [items, total] = await Promise.all([db.product.findMany({ where, orderBy, skip: (page - 1) * pageSize, take: pageSize, include: { category: true } }), db.product.count({ where })]);
       return { items: items.map(toProduct), total, page, pageSize, database: true };
-    } catch { /* See legacy fallback above. */ }
+    } catch { ensureDevelopmentFallback(); }
   }
+  ensureDevelopmentFallback();
   const all = legacyProducts(filters);
   return { items: all.slice((page - 1) * pageSize, page * pageSize), total: all.length, page, pageSize, database: false };
 }
@@ -93,12 +99,14 @@ export async function getProducts(filters: CatalogueFilters = {}) {
 export const getProductBySlug = cache(async (slug: string): Promise<CatalogueProduct | null> => {
   if (process.env.DATABASE_URL) {
     try {
-      const product = await db.product.findFirst({ where: { slug, status: ProductStatus.PUBLISHED }, include: { category: true } });
+      const product = await db.product.findFirst({ where: { slug, status: ProductStatus.PUBLISHED, category: { status: ProductStatus.PUBLISHED } }, include: { category: true } });
       if (product) return toProduct(product);
       const redirect = await db.productRedirect.findUnique({ where: { oldSlug: slug }, include: { product: { include: { category: true } } } });
-      if (redirect?.product.status === ProductStatus.PUBLISHED) return toProduct(redirect.product);
-    } catch { /* Fallback makes a configured but not-yet-migrated local setup usable. */ }
+      if (redirect?.product.status === ProductStatus.PUBLISHED && redirect.product.category.status === ProductStatus.PUBLISHED) return toProduct(redirect.product);
+      return null;
+    } catch { ensureDevelopmentFallback(); }
   }
+  ensureDevelopmentFallback();
   return legacyProducts().find((product) => product.slug === slug) ?? null;
 });
 

@@ -4,6 +4,8 @@ import { CategoryCard } from "@/components/catalogue/category-card";
 import { ProductCard } from "@/components/catalogue/product-card";
 import { getCategories, getProducts } from "@/lib/catalogue";
 
+export const dynamic = "force-dynamic";
+
 export default async function HomePage() {
   const [categories, featured] = await Promise.all([getCategories(), getProducts({ sort: "featured", pageSize: 4 })]);
   return <><section className="hero"><Image src="/assets/generator-hero.webp" alt="Industrial generator engine in a facility" fill priority sizes="100vw" className="hero-image" /><div className="hero-overlay" /><div className="shell hero-content"><p className="eyebrow inverse">Innovative Generator Parts</p><h1>Dependable parts.<br /><span>Dependable power.</span></h1><p>Generator components for maintenance, repair and reliable operation across eight major systems.</p><div className="button-row"><Link className="button button-primary" href="/products">Browse parts <span aria-hidden="true">↗</span></Link><Link className="button button-light" href="/request-quote">Request a quote</Link></div></div></section>

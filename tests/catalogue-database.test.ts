@@ -14,4 +14,10 @@ describe("database catalogue search", () => {
     expect(where.OR).toContainEqual({ name: { equals: "AVR", mode: "insensitive" } });
     expect(queries.count.mock.calls[0][0].where).toEqual(where);
   });
+  it("does not silently fall back when production database queries fail", async () => {
+    vi.stubEnv("NODE_ENV", "production");
+    vi.stubEnv("DATABASE_URL", "configured-for-test");
+    queries.findMany.mockRejectedValueOnce(new Error("offline")); queries.count.mockResolvedValue(0);
+    await expect(getProducts()).rejects.toThrow("Catalogue database is unavailable");
+  });
 });

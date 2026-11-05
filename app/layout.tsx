@@ -5,6 +5,9 @@ import { Header } from "@/components/layout/header";
 import { WhatsAppBubble } from "@/components/layout/whatsapp-bubble";
 import { serializeJsonLd } from "@/lib/utils";
 
+// The shared footer contains database-managed categories and must not be frozen at build time.
+export const dynamic = "force-dynamic";
+
 const origin = process.env.APP_URL || "http://localhost:3000";
 export const metadata: Metadata = {
   metadataBase: new URL(origin),
